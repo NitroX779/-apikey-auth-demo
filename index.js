@@ -3,10 +3,170 @@ const bodyParser = require('body-parser');
 const session = require('express-session');
 const path = require('path');
 const cors = require('cors');
-const db = require('./db');
+const axios = require('axios');
+const crypto = require('crypto');
+
+// KeyAuth configuration
+const KEYAUTH_CONFIG = {
+    name: 'Bypass',
+    ownerid: 'NYVOikiir1',
+    version: '1.0',
+    secret: '6895fce8f8dd9622d0bf33222cc7486d71d34902a2d8aa0ecfadc159db2ed60b',
+    url: 'https://keyauth.win/api/1.2/'
+};
+
+// Generate checksum function
+function getChecksum() {
+    return require('crypto').createHash('sha256').update('your-app-checksum-data').digest('hex');
+}
+
+// Generate checksum (similar to Python getchecksum)
+function getChecksum() {
+    // This is a simplified version - in production, match Python implementation
+    return crypto.createHash('sha256').update('your-app-checksum-data').digest('hex');
+}
+const apiKeys = [];
+
+const db = {
+  init: () => console.log('Demo mode - no database'),
+  ensureAdminUser: () => {},
+  verifyUser: async (username, password) => {
+    console.log('Attempting KeyAuth login for user:', username);
+    
+    // Block admin/admin explicitly
+    if (username === 'admin' && password === 'admin') {
+      console.log('Blocked admin/admin login attempt');
+      return Promise.resolve(null);
+    }
+    
+    try {
+      // First initialize session with KeyAuth
+      const initData = {
+        type: 'init',
+        ownerid: KEYAUTH_CONFIG.ownerid,
+        name: KEYAUTH_CONFIG.name,
+        ver: KEYAUTH_CONFIG.version,
+        secret: KEYAUTH_CONFIG.secret
+      };
+      
+      console.log('Sending init request to KeyAuth...', initData);
+      const initQueryString = Object.keys(initData)
+        .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(initData[key])}`)
+        .join('&');
+      
+      const initUrl = `${KEYAUTH_CONFIG.url}?${initQueryString}`;
+      console.log('Init API URL:', initUrl);
+      
+      const initResponse = await axios.get(initUrl);
+      console.log('Init response:', initResponse.data);
+      
+      if (initResponse.data.success) {
+        // Now attempt login with session ID
+        const loginData = {
+          type: 'login',
+          username: username,
+          pass: password,
+          sessionid: initResponse.data.sessionid,  // Using session ID as key
+          name: KEYAUTH_CONFIG.name,
+          ownerid: KEYAUTH_CONFIG.ownerid
+        };
+        
+        console.log('Sending login request to KeyAuth...', loginData);
+        const loginQueryString = Object.keys(loginData)
+          .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(loginData[key])}`)
+          .join('&');
+        
+        const loginUrl = `${KEYAUTH_CONFIG.url}?${loginQueryString}`;
+        console.log('Login API URL:', loginUrl);
+        
+        const loginResponse = await axios.get(loginUrl);
+        console.log('Login response:', loginResponse.data);
+        
+        if (loginResponse.data.success) {
+          console.log('KeyAuth login successful for:', username);
+          return Promise.resolve({
+            id: loginResponse.data.userid || 1,
+            username: username,
+            keyauth_data: loginResponse.data
+          });
+        } else {
+          console.log('KeyAuth login failed:', loginResponse.data.message);
+        }
+      } else {
+        console.log('KeyAuth init failed:', initResponse.data.message);
+      }
+      
+      return Promise.resolve(null);
+    } catch (error) {
+      console.error('KeyAuth authentication error:', error.message);
+      if (error.response) {
+        console.error('Response data:', error.response.data);
+      }
+      return Promise.resolve(null);
+    }
+  },
+  getApiKeysByUser: (userId) => Promise.resolve(apiKeys),
+  createApiKey: (userId, label, expiryDays, maxUses, format, customSuffix) => {
+    const key = format + (customSuffix || Math.random().toString(36).substring(2, 10));
+    apiKeys.push({
+      id: apiKeys.length + 1,
+      key,
+      label: label || '',
+      created_at: new Date().toISOString(),
+      expiry_days: expiryDays || 30,
+      max_uses: maxUses || 1,
+      used_count: 0,
+      banned: 0,
+      format: format || 'ContentalX-',
+      hwid: null,
+      ip: null
+    });
+    return Promise.resolve(key);
+  },
+  validateApiKey: (key, hwid, ip) => {
+    const foundKey = apiKeys.find(k => k.key === key);
+    if (foundKey && !foundKey.banned) {
+      foundKey.used_count++;
+      foundKey.hwid = foundKey.hwid || hwid;
+      foundKey.ip = foundKey.ip || ip;
+      return Promise.resolve({
+        ...foundKey,
+        user_id: 1,
+        username: 'admin'
+      });
+    }
+    return Promise.resolve(null);
+  },
+  deleteApiKey: (id, userId) => {
+    const index = apiKeys.findIndex(k => k.id == id);
+    if (index !== -1) {
+      apiKeys.splice(index, 1);
+      return Promise.resolve(true);
+    }
+    return Promise.resolve(false);
+  },
+  banApiKey: (id, userId, banned) => {
+    const key = apiKeys.find(k => k.id == id);
+    if (key) {
+      key.banned = banned ? 1 : 0;
+      return Promise.resolve(true);
+    }
+    return Promise.resolve(false);
+  },
+  resetApiKey: (id, userId) => {
+    const key = apiKeys.find(k => k.id == id);
+    if (key) {
+      key.used_count = 0;
+      return Promise.resolve(true);
+    }
+    return Promise.resolve(false);
+  }
+};
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+console.log('Starting server with KeyAuth integration...');
 
 app.use(cors());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -35,6 +195,58 @@ app.post('/login', async (req, res) => {
   try {
     const user = await db.verifyUser(username, password);
     if (!user) return res.status(401).json({ error: 'Invalid credentials' });
+    req.session.userId = user.id;
+    req.session.username = user.username;
+    res.json({ ok: true, username: user.username });
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+app.post('/register', async (req, res) => {
+  const { username, password, key } = req.body;
+  if (!username || !password || !key) {
+    return res.status(400).json({ error: 'Missing fields' });
+  }
+  try {
+    const initData = {
+      type: 'init',
+      ownerid: KEYAUTH_CONFIG.ownerid,
+      name: KEYAUTH_CONFIG.name,
+      ver: KEYAUTH_CONFIG.version,
+      secret: KEYAUTH_CONFIG.secret
+    };
+    const initQueryString = Object.keys(initData)
+      .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(initData[key])}`)
+      .join('&');
+    const initUrl = `${KEYAUTH_CONFIG.url}?${initQueryString}`;
+    const initResponse = await axios.get(initUrl);
+
+    if (!initResponse.data.success) {
+      return res.status(400).json({ error: initResponse.data.message || 'Init failed' });
+    }
+
+    const registerData = {
+      type: 'register',
+      username: username,
+      pass: password,
+      key: key,
+      sessionid: initResponse.data.sessionid,
+      name: KEYAUTH_CONFIG.name,
+      ownerid: KEYAUTH_CONFIG.ownerid
+    };
+    const registerQueryString = Object.keys(registerData)
+      .map(k => `${encodeURIComponent(k)}=${encodeURIComponent(registerData[k])}`)
+      .join('&');
+    const registerUrl = `${KEYAUTH_CONFIG.url}?${registerQueryString}`;
+    const registerResponse = await axios.get(registerUrl);
+
+    if (!registerResponse.data.success) {
+      return res.status(400).json({ error: registerResponse.data.message || 'Registration failed' });
+    }
+
+    const user = await db.verifyUser(username, password);
+    if (!user) return res.json({ ok: true, registered: true });
     req.session.userId = user.id;
     req.session.username = user.username;
     res.json({ ok: true, username: user.username });

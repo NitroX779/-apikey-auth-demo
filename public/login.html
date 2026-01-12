@@ -74,8 +74,14 @@
     .logo {
       max-width: 120px;
       height: auto;
-      filter: drop-shadow(0 0 20px rgba(39, 174, 96, 0.5));
+      filter: drop-shadow(0 0 30px rgba(39, 174, 96, 0.7));
+      transition: transform 0.4s ease, filter 0.4s ease;
       animation: pulse 3s ease-in-out infinite;
+    }
+
+    .logo:hover {
+      transform: scale(1.05);
+      filter: drop-shadow(0 0 40px rgba(39, 174, 96, 1));
     }
     
     @keyframes logoAppear {
@@ -96,11 +102,14 @@
     
     h1 {
       text-align: center;
-      color: #27ae60;
       margin: 0 0 5px 0;
       font-size: 28px;
       font-weight: 700;
-      text-shadow: 0 0 20px rgba(39, 174, 96, 0.5);
+      background: linear-gradient(135deg, var(--green-1), var(--green-2));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      text-shadow: 0 0 12px rgba(39, 174, 96, 0.45);
       animation: textGlow 2s ease-in-out infinite alternate;
     }
     
@@ -111,9 +120,10 @@
     
     .subtitle {
       text-align: center;
-      color: #b0b0b0;
+      color: #b8eecb;
       margin-bottom: 30px;
       font-size: 14px;
+      text-shadow: 0 0 10px rgba(39, 174, 96, 0.25);
       animation: fadeIn 1.2s ease-in;
     }
     
@@ -182,7 +192,7 @@
     }
     
     .login-btn:active {
-      transform: translateY(0);
+      transform: translateY(1px) scale(0.99);
     }
     
     .login-btn::after {
@@ -249,6 +259,129 @@
         opacity: 0;
       }
     }
+    input:-webkit-autofill,
+    input:-webkit-autofill:hover,
+    input:-webkit-autofill:focus,
+    textarea:-webkit-autofill,
+    textarea:-webkit-autofill:hover,
+    textarea:-webkit-autofill:focus,
+    select:-webkit-autofill,
+    select:-webkit-autofill:hover,
+    select:-webkit-autofill:focus {
+      -webkit-text-fill-color: #e0e0e0 !important;
+      caret-color: #e0e0e0;
+      box-shadow: 0 0 0 1000px rgba(25, 25, 25, 0.9) inset !important;
+      -webkit-box-shadow: 0 0 0 1000px rgba(25, 25, 25, 0.9) inset !important;
+      border: 1px solid rgba(255, 255, 255, 0.1) !important;
+      background-clip: padding-box;
+    }
+    input:-webkit-autofill:focus {
+      border-color: #27ae60 !important;
+      box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.3), 0 0 0 3px rgba(39, 174, 96, 0.2), 0 0 0 1000px rgba(25, 25, 25, 0.9) inset !important;
+      -webkit-box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.3), 0 0 0 3px rgba(39, 174, 96, 0.2), 0 0 0 1000px rgba(25, 25, 25, 0.9) inset !important;
+    }
+    input:-moz-autofill,
+    textarea:-moz-autofill,
+    select:-moz-autofill {
+      box-shadow: 0 0 0 1000px rgba(25, 25, 25, 0.9) inset !important;
+      color: #e0e0e0 !important;
+      caret-color: #e0e0e0;
+    }
+    .input-wrapper { position: relative; }
+    .input-wrapper .icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #27ae60; font-size: 16px; pointer-events: none; opacity: 0.9; }
+    .input-wrapper:focus-within .icon { color: #2ecc71; }
+    .input-wrapper input { padding-left: 42px; }
+    .form-group:focus-within label { color: var(--green-2); text-shadow: 0 0 8px rgba(39, 174, 96, 0.3); }
+    .login-container:hover { box-shadow: 0 22px 56px rgba(0,0,0,0.55), 0 0 60px rgba(39,174,96,0.12); }
+    ::selection { background: rgba(39,174,96,0.3); color: #fff; }
+    :root {
+      --green-1: #27ae60;
+      --green-2: #2ecc71;
+      --surface: rgba(20, 20, 20, 0.85);
+      --surface-strong: rgba(25, 25, 25, 0.9);
+    }
+
+    /* Modern green overrides */
+    .login-container {
+      border: 1px solid transparent;
+      background-image: linear-gradient(rgba(30,30,30,0.9), rgba(30,30,30,0.9)),
+                        linear-gradient(135deg, rgba(39,174,96,0.35), rgba(46,204,113,0.35));
+      background-origin: border-box;
+      background-clip: padding-box, border-box;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 40px rgba(39, 174, 96, 0.08);
+    }
+
+    .input-wrapper:focus-within::after {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      border-radius: 14px;
+      pointer-events: none;
+      box-shadow: 0 0 12px rgba(46, 204, 113, 0.35), 0 0 24px rgba(39, 174, 96, 0.20);
+    }
+
+    input {
+      background: linear-gradient(var(--surface), var(--surface)) padding-box,
+                  linear-gradient(135deg, rgba(39,174,96,0.35), rgba(46,204,113,0.35)) border-box;
+      border: 1px solid transparent;
+      transition: box-shadow 0.3s ease, background 0.3s ease, transform 0.08s ease;
+    }
+
+    input:hover {
+      transform: translateY(-1px);
+      box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.3), 0 0 12px rgba(39, 174, 96, 0.15);
+    }
+
+    input:focus {
+      background: linear-gradient(var(--surface-strong), var(--surface-strong)) padding-box,
+                  linear-gradient(135deg, var(--green-1), var(--green-2)) border-box;
+      box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.35), 0 0 0 3px rgba(39, 174, 96, 0.22), 0 0 24px rgba(39, 174, 96, 0.35);
+    }
+
+    .login-btn {
+      background: linear-gradient(135deg, var(--green-1) 0%, var(--green-2) 50%, var(--green-1) 100%);
+      background-size: 200% 200%;
+      box-shadow: 0 4px 20px rgba(39, 174, 96, 0.4), 0 0 0 rgba(0,0,0,0);
+      transition: transform 0.12s ease, box-shadow 0.25s ease, background-position 0.6s ease;
+    }
+
+    .login-btn:hover {
+      background-position: 100% 0;
+      box-shadow: 0 6px 28px rgba(39, 174, 96, 0.6), 0 0 20px rgba(46, 204, 113, 0.35);
+    }
+
+    .login-btn:active {
+      transform: translateY(1px) scale(0.99);
+    }
+
+    #authToggle a {
+      color: #b8eecb;
+      text-decoration: none;
+      position: relative;
+      font-weight: 600;
+      transition: color 0.25s ease;
+    }
+
+    #authToggle a::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      bottom: -3px;
+      width: 0;
+      height: 2px;
+      background: var(--green-2);
+      transition: width 0.25s ease;
+    }
+
+    #authToggle a:hover,
+    #authToggle a.active {
+      color: var(--green-2);
+    }
+
+    #authToggle a:hover::after,
+    #authToggle a.active::after {
+      width: 100%;
+    }
   </style>
 </head>
 <body>
@@ -260,36 +393,92 @@
     </div>
     
     <h1>ContentalX</h1>
-    <div class="subtitle">API Key Management System</div>
+    <div class="subtitle">API Key Management System - KeyAuth Login</div>
     
     <form id="loginForm">
       <div class="form-group">
-        <label for="username">Username</label>
-        <input 
-          type="text" 
-          id="username" 
-          name="username" 
-          value="admin" 
-          placeholder="Enter your username"
-          autocomplete="username"
-        >
+        <label for="regUsername">Username</label>
+        <div class="input-wrapper">
+          <span class="icon">👤</span>
+          <input 
+            type="text" 
+            id="regUsername" 
+            name="username" 
+            placeholder="Choose a username"
+            autocomplete="username"
+          >
+        </div>
       </div>
       
       <div class="form-group">
-        <label for="password">Password</label>
-        <input 
-          type="password" 
-          id="password" 
-          name="password" 
-          value="admin" 
-          placeholder="Enter your password"
-          autocomplete="current-password"
-        >
+        <label for="regPassword">Password</label>
+        <div class="input-wrapper">
+          <span class="icon">🔒</span>
+          <input 
+            type="password" 
+            id="regPassword" 
+            name="password" 
+            placeholder="Choose a password"
+            autocomplete="new-password"
+          >
+        </div>
       </div>
       
-      <button type="submit" class="login-btn">Login</button>
+      <button type="submit" class="login-btn">Login with KeyAuth</button>
       
       <div class="error-message" id="errorMessage">Invalid credentials. Please try again.</div>
+    </form>
+
+    <div id="authToggle" style="margin-top: 12px; text-align:center;">
+      <a href="#" id="showRegister" class="tab-link active">Register</a>
+      <span style="color:#777; margin: 0 8px;">|</span>
+      <a href="#" id="showLogin" class="tab-link" style="display:none;">Back to Login</a>
+    </div>
+
+    <form id="registerForm" style="display:none; margin-top:20px;">
+      <div class="form-group">
+        <label for="regUsername">Username</label>
+        <div class="input-wrapper">
+          <span class="icon">👤</span>
+          <input 
+            type="text" 
+            id="regUsername" 
+            name="username" 
+            placeholder="Choose a username"
+            autocomplete="username"
+          >
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="regPassword">Password</label>
+        <div class="input-wrapper">
+          <span class="icon">🔒</span>
+          <input 
+            type="password" 
+            id="regPassword" 
+            name="password" 
+            placeholder="Choose a password"
+            autocomplete="new-password"
+          >
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="regKey">License Key</label>
+        <div class="input-wrapper">
+          <span class="icon">🔑</span>
+          <input 
+            type="text" 
+            id="regKey" 
+            name="key" 
+            placeholder="Enter your license key"
+          >
+        </div>
+      </div>
+
+      <button type="submit" class="login-btn">Register</button>
+      <div class="error-message" id="registerError">Registration failed. Please try again.</div>
     </form>
   </div>
 
@@ -359,6 +548,62 @@
       }
     `;
     document.head.appendChild(style);
+
+    const registerForm = document.getElementById('registerForm');
+    const showRegister = document.getElementById('showRegister');
+    const showLogin = document.getElementById('showLogin');
+    const registerError = document.getElementById('registerError');
+
+    // Set default active tab
+    showRegister.classList.add('active');
+
+    showRegister.addEventListener('click', (e) => {
+      e.preventDefault();
+      document.getElementById('loginForm').style.display = 'none';
+      registerForm.style.display = 'block';
+      showRegister.style.display = 'none';
+      showLogin.style.display = 'inline';
+      // Toggle active tab color
+      showLogin.classList.add('active');
+      showRegister.classList.remove('active');
+    });
+
+    showLogin.addEventListener('click', (e) => {
+      e.preventDefault();
+      registerForm.style.display = 'none';
+      document.getElementById('loginForm').style.display = 'block';
+      showLogin.style.display = 'none';
+      showRegister.style.display = 'inline';
+      // Toggle active tab color
+      showRegister.classList.add('active');
+      showLogin.classList.remove('active');
+    });
+
+    registerForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const data = new FormData(registerForm);
+      const body = {
+        username: data.get('username'),
+        password: data.get('password'),
+        key: data.get('key')
+      };
+      try {
+        const res = await fetch('/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        if (!res.ok) throw new Error('Register failed');
+        window.location.href = '/admin.html';
+      } catch (error) {
+        registerError.classList.add('show');
+        registerForm.parentElement.style.animation = 'shake 0.5s';
+        setTimeout(() => {
+          registerForm.parentElement.style.animation = '';
+          registerError.classList.remove('show');
+        }, 3000);
+      }
+    });
     
     // Initialize floating elements
     createFloatingElements();
