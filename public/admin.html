@@ -1,0 +1,446 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Panel de Control - API Key Demo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #0a0a0a;
+      color: #e0e0e0;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      background-image: radial-gradient(circle at 20% 80%, rgba(39, 174, 96, 0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 20%, rgba(39, 174, 96, 0.1) 0%, transparent 50%);
+    }
+    .header {
+      background: rgba(20, 20, 20, 0.9);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(39, 174, 96, 0.3);
+      padding: 20px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-left h1 {
+      margin: 0;
+      color: #27ae60;
+      font-size: 28px;
+      font-weight: 700;
+      text-shadow: 0 0 20px rgba(39, 174, 96, 0.5);
+    }
+    .header-left .subtitle {
+      color: #b0b0b0;
+      font-size: 14px;
+      margin-top: 5px;
+    }
+    .logo-header {
+      max-width: 40px;
+      height: auto;
+      filter: drop-shadow(0 0 10px rgba(39, 174, 96, 0.5));
+      animation: headerLogoPulse 3s ease-in-out infinite;
+      margin-right: 15px;
+    }
+    @keyframes headerLogoPulse {
+      0%, 100% { transform: scale(1); filter: drop-shadow(0 0 10px rgba(39, 174, 96, 0.5)); }
+      50% { transform: scale(1.1); filter: drop-shadow(0 0 15px rgba(39, 174, 96, 0.8)); }
+    }
+    .header-content {
+      display: flex;
+      align-items: center;
+    }
+    .logout-btn {
+      background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 25px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
+    }
+    .logout-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(231, 76, 60, 0.5);
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 30px;
+    }
+    .notification {
+      background: rgba(39, 174, 96, 0.1);
+      border: 1px solid #27ae60;
+      border-radius: 15px;
+      padding: 15px 20px;
+      margin-bottom: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      animation: slideIn 0.5s ease-out;
+      backdrop-filter: blur(5px);
+    }
+    @keyframes slideIn {
+      from { transform: translateY(-20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .notification.success {
+      border-color: #27ae60;
+    }
+    .notification .icon {
+      font-size: 24px;
+      color: #27ae60;
+      margin-right: 15px;
+    }
+    .notification .message {
+      flex-grow: 1;
+    }
+    .copy-btn {
+      background: #27ae60;
+      color: white;
+      border: none;
+      padding: 8px 15px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.3s ease;
+    }
+    .copy-btn:hover {
+      background: #2ecc71;
+      transform: scale(1.05);
+    }
+    .card {
+      background: rgba(30, 30, 30, 0.9);
+      backdrop-filter: blur(15px);
+      border: 1px solid rgba(39, 174, 96, 0.3);
+      border-radius: 20px;
+      padding: 30px;
+      margin-bottom: 30px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      animation: fadeInUp 0.6s ease-out;
+    }
+    @keyframes fadeInUp {
+      from { transform: translateY(30px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .card h2 {
+      color: #27ae60;
+      margin-top: 0;
+      margin-bottom: 20px;
+      font-weight: 600;
+      text-shadow: 0 0 10px rgba(39, 174, 96, 0.3);
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      color: #e0e0e0;
+      font-weight: 500;
+    }
+    .form-group input {
+      width: 100%;
+      padding: 12px 15px;
+      background: rgba(20, 20, 20, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      color: #e0e0e0;
+      font-size: 16px;
+      transition: all 0.3s ease;
+    }
+    .form-group input:focus {
+      border-color: #27ae60;
+      box-shadow: 0 0 20px rgba(39, 174, 96, 0.3);
+      outline: none;
+    }
+    .cost-summary {
+      background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+      border-radius: 15px;
+      padding: 20px;
+      text-align: center;
+      margin-top: 20px;
+      box-shadow: 0 4px 20px rgba(39, 174, 96, 0.4);
+    }
+    .cost-summary h3 {
+      margin: 0;
+      color: white;
+      font-size: 24px;
+      font-weight: 700;
+    }
+    .cost-summary p {
+      margin: 5px 0 0 0;
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 14px;
+    }
+    .format-section {
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .format-preview {
+      background: rgba(0, 0, 0, 0.8);
+      border: 1px solid rgba(39, 174, 96, 0.3);
+      border-radius: 10px;
+      padding: 15px;
+      font-family: 'Courier New', monospace;
+      color: #27ae60;
+      margin-top: 10px;
+      font-size: 14px;
+    }
+    .license-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
+    .license-card {
+      background: rgba(30, 30, 30, 0.9);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(39, 174, 96, 0.2);
+      border-radius: 15px;
+      padding: 20px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+      animation: fadeInUp 0.6s ease-out;
+      animation-fill-mode: both;
+    }
+    .license-card:nth-child(1) { animation-delay: 0.1s; }
+    .license-card:nth-child(2) { animation-delay: 0.2s; }
+    .license-card:nth-child(3) { animation-delay: 0.3s; }
+    .license-card .key {
+      font-family: 'Courier New', monospace;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      color: #27ae60;
+      word-break: break-all;
+    }
+    .license-card .details {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .used-info {
+      font-size: 12px;
+      color: #b0b0b0;
+      font-weight: 500;
+    }
+    .key-checkbox {
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+      appearance: none;
+      background-color: rgba(30, 30, 30, 0.8);
+      border: 2px solid #27ae60;
+      border-radius: 5px;
+      position: relative;
+      transition: all 0.3s ease;
+      box-shadow: 0 0 5px rgba(39, 174, 96, 0.3);
+    }
+    .key-checkbox:hover {
+      transform: scale(1.1);
+      border-color: #2ecc71;
+      box-shadow: 0 0 10px rgba(46, 204, 113, 0.5);
+    }
+    .key-checkbox:checked {
+      background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+      border-color: #2ecc71;
+      box-shadow: 0 0 15px rgba(46, 204, 113, 0.7);
+    }
+    .key-checkbox:checked::after {
+      content: '✓';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      font-size: 14px;
+      font-weight: bold;
+    }
+    .key-checkbox:focus {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(39, 174, 96, 0.3);
+    }
+    .status-badge {
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .status-active {
+      background: #27ae60;
+      color: white;
+    }
+    .status-expired {
+      background: #e74c3c;
+      color: white;
+    }
+    .status-banned {
+      background: #f39c12;
+      color: white;
+    }
+    .settings-btn {
+      background: rgba(231, 76, 60, 0.8);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      cursor: pointer;
+      font-size: 18px;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(5px);
+    }
+    .settings-btn:hover {
+      background: #e74c3c;
+      transform: scale(1.1);
+      box-shadow: 0 4px 15px rgba(231, 76, 60, 0.5);
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+      color: white;
+      border: none;
+      padding: 12px 25px;
+      border-radius: 25px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 16px;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 20px rgba(39, 174, 96, 0.4);
+      backdrop-filter: blur(5px);
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 25px rgba(39, 174, 96, 0.6);
+    }
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+    /* Dropdown Menu Styles */
+    .dropdown-menu {
+      position: absolute;
+      background: rgba(30, 30, 30, 0.95);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(39, 174, 96, 0.3);
+      border-radius: 10px;
+      padding: 10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      z-index: 1000;
+      display: none;
+      min-width: 200px;
+      animation: fadeIn 0.2s ease;
+    }
+    .dropdown-menu.show {
+      display: block;
+    }
+    .dropdown-item {
+      padding: 8px 12px;
+      background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: 500;
+      margin-bottom: 5px;
+      width: 100%;
+      text-align: left;
+      transition: all 0.3s ease;
+    }
+    .dropdown-item:hover {
+      background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+      transform: translateY(-1px);
+    }
+    @media (max-width: 768px) {
+      .container {
+        padding: 15px;
+      }
+      .header {
+        padding: 15px 20px;
+      }
+      .license-list {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-left">
+      <div class="header-content">
+        <img src="/Logo/image_1_1765411428289-removebg-preview.png" alt="Logo" class="logo-header">
+        <div>
+          <h1>Panel de Control</h1>
+          <div class="subtitle" id="userSubtitle">ContentalX · Admin</div>
+        </div>
+      </div>
+    </div>
+    <button class="logout-btn" id="logout">Logout</button>
+  </div>
+
+  <div class="container">
+    <div id="notifications"></div>
+
+    <div class="card">
+      <h2>Generar Licencias</h2>
+      <div class="form-group">
+        <label for="expiryDays">Duración (días)</label>
+        <input id="expiryDays" type="number" value="30">
+      </div>
+      <div class="form-group">
+        <label for="maxUses">Usos máximos</label>
+        <input id="maxUses" type="number" value="1">
+      </div>
+      <div class="form-group">
+        <label for="count">Cantidad</label>
+        <input id="count" type="number" value="1">
+      </div>
+      <button class="btn-primary" id="create">Generar Licencias</button>
+
+      <div class="format-section">
+        <h3>Formato Licenza</h3>
+        <div class="form-group">
+          <label for="prefix">Prefijo</label>
+          <input id="prefix" type="text" value="ContentalX-" readonly>
+        </div>
+        <div class="form-group">
+          <label for="customPart">Parte personalizzabile</label>
+          <input id="customPart" type="text" value="" placeholder="Es. PRO">
+        </div>
+        <div class="format-preview" id="preview">ContentalX-</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Tus Licencias</h2>
+      <div class="license-list" id="keys"></div>
+      <div class="bulk-actions" style="margin-top: 20px; display: flex; gap: 10px;">
+        <button class="btn-primary" id="deleteSelected">Eliminar Seleccionadas</button>
+        <button class="btn-primary" id="resetSelected">Reset HWID Seleccionadas</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Dropdown Template (hidden) -->
+  <div id="dropdownTemplate" class="dropdown-menu" style="display: none;">
+    <button class="dropdown-item" onclick="resetHwid()">Reset HWID</button>
+    <button class="dropdown-item" onclick="modifyLabel()">Modificar Label</button>
+    <button class="dropdown-item" onclick="addDays()">Agregar Días</button>
+    <button class="dropdown-item" onclick="deleteKey()">Eliminar</button>
+    <button class="dropdown-item" onclick="banKey()">Banear</button>
+    <button class="dropdown-item" onclick="unbanKey()">Desbanear</button>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,367 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Login - API Key Demo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #0a0a0a;
+      color: #e0e0e0;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      background-image: radial-gradient(circle at 20% 80%, rgba(39, 174, 96, 0.15) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 20%, rgba(39, 174, 96, 0.15) 0%, transparent 50%);
+    }
+    
+    .login-container {
+      background: rgba(30, 30, 30, 0.9);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(39, 174, 96, 0.3);
+      border-radius: 20px;
+      padding: 40px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+      animation: fadeInScale 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .login-container::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(39, 174, 96, 0.1) 0%, transparent 70%);
+      animation: rotate 20s linear infinite;
+      z-index: -1;
+    }
+    
+    @keyframes rotate {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    
+    @keyframes fadeInScale {
+      from {
+        transform: scale(0.8) translateY(30px);
+        opacity: 0;
+      }
+      to {
+        transform: scale(1) translateY(0);
+        opacity: 1;
+      }
+    }
+    
+    .logo-container {
+      text-align: center;
+      margin-bottom: 30px;
+      animation: logoAppear 1s ease-out;
+    }
+    
+    .logo {
+      max-width: 120px;
+      height: auto;
+      filter: drop-shadow(0 0 20px rgba(39, 174, 96, 0.5));
+      animation: pulse 3s ease-in-out infinite;
+    }
+    
+    @keyframes logoAppear {
+      from {
+        transform: translateY(-20px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+    
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); filter: drop-shadow(0 0 20px rgba(39, 174, 96, 0.5)); }
+      50% { transform: scale(1.05); filter: drop-shadow(0 0 30px rgba(39, 174, 96, 0.8)); }
+    }
+    
+    h1 {
+      text-align: center;
+      color: #27ae60;
+      margin: 0 0 5px 0;
+      font-size: 28px;
+      font-weight: 700;
+      text-shadow: 0 0 20px rgba(39, 174, 96, 0.5);
+      animation: textGlow 2s ease-in-out infinite alternate;
+    }
+    
+    @keyframes textGlow {
+      from { text-shadow: 0 0 20px rgba(39, 174, 96, 0.5); }
+      to { text-shadow: 0 0 30px rgba(39, 174, 96, 0.8), 0 0 40px rgba(39, 174, 96, 0.3); }
+    }
+    
+    .subtitle {
+      text-align: center;
+      color: #b0b0b0;
+      margin-bottom: 30px;
+      font-size: 14px;
+      animation: fadeIn 1.2s ease-in;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 8px;
+      color: #e0e0e0;
+      font-weight: 500;
+      font-size: 14px;
+    }
+    
+    input {
+      width: 100%;
+      padding: 15px;
+      background: rgba(20, 20, 20, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      color: #e0e0e0;
+      font-family: 'Inter', sans-serif;
+      font-size: 16px;
+      transition: all 0.3s ease;
+      box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.3);
+    }
+    
+    input:focus {
+      outline: none;
+      border-color: #27ae60;
+      box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.3), 0 0 0 3px rgba(39, 174, 96, 0.2);
+      background: rgba(25, 25, 25, 0.9);
+    }
+    
+    input::placeholder {
+      color: #777;
+    }
+    
+    .login-btn {
+      width: 100%;
+      padding: 15px;
+      background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-family: 'Inter', sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 20px rgba(39, 174, 96, 0.4);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .login-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 25px rgba(39, 174, 96, 0.6);
+      background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+    }
+    
+    .login-btn:active {
+      transform: translateY(0);
+    }
+    
+    .login-btn::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -60%;
+      width: 20px;
+      height: 200%;
+      background: rgba(255, 255, 255, 0.3);
+      transform: rotate(25deg);
+      transition: all 0.6s;
+    }
+    
+    .login-btn:hover::after {
+      left: 120%;
+    }
+    
+    .error-message {
+      color: #e74c3c;
+      text-align: center;
+      margin-top: 15px;
+      font-size: 14px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    
+    .error-message.show {
+      opacity: 1;
+    }
+    
+    .floating-elements {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: -1;
+    }
+    
+    .floating-element {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      background: rgba(39, 174, 96, 0.3);
+      border-radius: 50%;
+      animation: float 15s infinite linear;
+    }
+    
+    @keyframes float {
+      0% {
+        transform: translateY(100vh) translateX(0);
+        opacity: 0;
+      }
+      10% {
+        opacity: 1;
+      }
+      90% {
+        opacity: 1;
+      }
+      100% {
+        transform: translateY(-100px) translateX(100px);
+        opacity: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="floating-elements" id="floatingElements"></div>
+  
+  <div class="login-container">
+    <div class="logo-container">
+      <img src="/Logo/image_1_1765411428289-removebg-preview.png" alt="Logo" class="logo">
+    </div>
+    
+    <h1>ContentalX</h1>
+    <div class="subtitle">API Key Management System</div>
+    
+    <form id="loginForm">
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input 
+          type="text" 
+          id="username" 
+          name="username" 
+          value="admin" 
+          placeholder="Enter your username"
+          autocomplete="username"
+        >
+      </div>
+      
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input 
+          type="password" 
+          id="password" 
+          name="password" 
+          value="admin" 
+          placeholder="Enter your password"
+          autocomplete="current-password"
+        >
+      </div>
+      
+      <button type="submit" class="login-btn">Login</button>
+      
+      <div class="error-message" id="errorMessage">Invalid credentials. Please try again.</div>
+    </form>
+  </div>
+
+  <script>
+    // Create floating background elements
+    function createFloatingElements() {
+      const container = document.getElementById('floatingElements');
+      const elementCount = 20;
+      
+      for (let i = 0; i < elementCount; i++) {
+        const element = document.createElement('div');
+        element.classList.add('floating-element');
+        
+        // Random position and delay
+        element.style.left = Math.random() * 100 + '%';
+        element.style.animationDelay = Math.random() * 15 + 's';
+        element.style.animationDuration = (10 + Math.random() * 20) + 's';
+        
+        container.appendChild(element);
+      }
+    }
+    
+    // Form submission
+    const form = document.getElementById('loginForm');
+    const errorMessage = document.getElementById('errorMessage');
+    
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const data = new FormData(form);
+      const body = { 
+        username: data.get('username'), 
+        password: data.get('password') 
+      };
+      
+      try {
+        const res = await fetch('/login', { 
+          method: 'POST', 
+          headers: { 'Content-Type': 'application/json' }, 
+          body: JSON.stringify(body) 
+        });
+        
+        if (!res.ok) {
+          throw new Error('Login failed');
+        }
+        
+        // Success - redirect to dashboard
+        window.location.href = '/admin.html';
+      } catch (error) {
+        // Show error message
+        errorMessage.classList.add('show');
+        // Shake animation effect
+        form.parentElement.style.animation = 'shake 0.5s';
+        setTimeout(() => {
+          form.parentElement.style.animation = '';
+          errorMessage.classList.remove('show');
+        }, 3000);
+      }
+    });
+    
+    // Add shake animation to CSS dynamically
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        20%, 60% { transform: translateX(-10px); }
+        40%, 80% { transform: translateX(10px); }
+      }
+    `;
+    document.head.appendChild(style);
+    
+    // Initialize floating elements
+    createFloatingElements();
+  </script>
+</body>
+</html>
