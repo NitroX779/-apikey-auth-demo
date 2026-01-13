@@ -75,6 +75,9 @@ function verifyUser(username, password) {
   });
 }
 
+// Removed default admin user creation - using KeyAuth login system
+// Uncomment below to restore local admin user (from working version)
+/*
 function ensureAdminUser() {
   getUserByUsername('admin').then(user => {
     if (!user) {
@@ -86,6 +89,9 @@ function ensureAdminUser() {
     }
   }).catch(console.error);
 }
+*/
+
+// Removed default admin user creation - using KeyAuth login system
 
 function createApiKey(userId, label = '', expiryDays = 30, maxUses = 1, format = 'ContentalX-', customSuffix = '') {
   return new Promise((resolve, reject) => {
@@ -180,7 +186,6 @@ module.exports = {
   createUser,
   getUserByUsername,
   verifyUser,
-  ensureAdminUser,
   createApiKey,
   getApiKeysByUser,
   validateApiKey,

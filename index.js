@@ -1,10 +1,13 @@
 const express = require('express');
+const axios = require('axios');
 const bodyParser = require('body-parser');
 const session = require('express-session');
 const path = require('path');
 const cors = require('cors');
-const axios = require('axios');
-const crypto = require('crypto');
+const db = require('./db');
+
+const app = express();
+const PORT = process.env.PORT || 3000;
 
 // KeyAuth configuration
 const KEYAUTH_CONFIG = {
@@ -15,174 +18,161 @@ const KEYAUTH_CONFIG = {
     url: 'https://keyauth.win/api/1.2/'
 };
 
-// Generate checksum function
-function getChecksum() {
-    return require('crypto').createHash('sha256').update('your-app-checksum-data').digest('hex');
-}
-
-// Generate checksum (similar to Python getchecksum)
-function getChecksum() {
-    // This is a simplified version - in production, match Python implementation
-    return crypto.createHash('sha256').update('your-app-checksum-data').digest('hex');
-}
-const apiKeys = [];
-
-const db = {
-  init: () => console.log('Demo mode - no database'),
-  ensureAdminUser: () => {},
-  verifyUser: async (username, password) => {
-    console.log('Attempting KeyAuth login for user:', username);
-    
-    // Block admin/admin explicitly
-    if (username === 'admin' && password === 'admin') {
-      console.log('Blocked admin/admin login attempt');
-      return Promise.resolve(null);
-    }
-    
-    try {
-      // First initialize session with KeyAuth
-      const initData = {
-        type: 'init',
-        ownerid: KEYAUTH_CONFIG.ownerid,
-        name: KEYAUTH_CONFIG.name,
-        ver: KEYAUTH_CONFIG.version,
-        secret: KEYAUTH_CONFIG.secret
-      };
-      
-      console.log('Sending init request to KeyAuth...', initData);
-      const initQueryString = Object.keys(initData)
-        .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(initData[key])}`)
-        .join('&');
-      
-      const initUrl = `${KEYAUTH_CONFIG.url}?${initQueryString}`;
-      console.log('Init API URL:', initUrl);
-      
-      const initResponse = await axios.get(initUrl);
-      console.log('Init response:', initResponse.data);
-      
-      if (initResponse.data.success) {
-        // Now attempt login with session ID
-        const loginData = {
-          type: 'login',
-          username: username,
-          pass: password,
-          sessionid: initResponse.data.sessionid,  // Using session ID as key
-          name: KEYAUTH_CONFIG.name,
-          ownerid: KEYAUTH_CONFIG.ownerid
-        };
-        
-        console.log('Sending login request to KeyAuth...', loginData);
-        const loginQueryString = Object.keys(loginData)
-          .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(loginData[key])}`)
-          .join('&');
-        
-        const loginUrl = `${KEYAUTH_CONFIG.url}?${loginQueryString}`;
-        console.log('Login API URL:', loginUrl);
-        
-        const loginResponse = await axios.get(loginUrl);
-        console.log('Login response:', loginResponse.data);
-        
-        if (loginResponse.data.success) {
-          console.log('KeyAuth login successful for:', username);
-          return Promise.resolve({
-            id: loginResponse.data.userid || 1,
-            username: username,
-            keyauth_data: loginResponse.data
-          });
-        } else {
-          console.log('KeyAuth login failed:', loginResponse.data.message);
-        }
-      } else {
-        console.log('KeyAuth init failed:', initResponse.data.message);
-      }
-      
-      return Promise.resolve(null);
-    } catch (error) {
-      console.error('KeyAuth authentication error:', error.message);
-      if (error.response) {
-        console.error('Response data:', error.response.data);
-      }
-      return Promise.resolve(null);
-    }
-  },
-  getApiKeysByUser: (userId) => Promise.resolve(apiKeys),
-  createApiKey: (userId, label, expiryDays, maxUses, format, customSuffix) => {
-    const key = format + (customSuffix || Math.random().toString(36).substring(2, 10));
-    apiKeys.push({
-      id: apiKeys.length + 1,
-      key,
-      label: label || '',
-      created_at: new Date().toISOString(),
-      expiry_days: expiryDays || 30,
-      max_uses: maxUses || 1,
-      used_count: 0,
-      banned: 0,
-      format: format || 'ContentalX-',
-      hwid: null,
-      ip: null
-    });
-    return Promise.resolve(key);
-  },
-  validateApiKey: (key, hwid, ip) => {
-    const foundKey = apiKeys.find(k => k.key === key);
-    if (foundKey && !foundKey.banned) {
-      foundKey.used_count++;
-      foundKey.hwid = foundKey.hwid || hwid;
-      foundKey.ip = foundKey.ip || ip;
-      return Promise.resolve({
-        ...foundKey,
-        user_id: 1,
-        username: 'admin'
-      });
-    }
-    return Promise.resolve(null);
-  },
-  deleteApiKey: (id, userId) => {
-    const index = apiKeys.findIndex(k => k.id == id);
-    if (index !== -1) {
-      apiKeys.splice(index, 1);
-      return Promise.resolve(true);
-    }
-    return Promise.resolve(false);
-  },
-  banApiKey: (id, userId, banned) => {
-    const key = apiKeys.find(k => k.id == id);
-    if (key) {
-      key.banned = banned ? 1 : 0;
-      return Promise.resolve(true);
-    }
-    return Promise.resolve(false);
-  },
-  resetApiKey: (id, userId) => {
-    const key = apiKeys.find(k => k.id == id);
-    if (key) {
-      key.used_count = 0;
-      return Promise.resolve(true);
-    }
-    return Promise.resolve(false);
-  }
-};
-
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-console.log('Starting server with KeyAuth integration...');
+console.log('KeyAuth Configuration Loaded:', {
+    name: KEYAUTH_CONFIG.name,
+    ownerid: KEYAUTH_CONFIG.ownerid,
+    version: KEYAUTH_CONFIG.version,
+    url: KEYAUTH_CONFIG.url,
+    secret_length: KEYAUTH_CONFIG.secret.length
+});
 
 app.use(cors());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
-app.use(session({ secret: 'dev-secret-change-me', resave: false, saveUninitialized: false, cookie: { httpOnly: false, secure: false } }));
+app.use(session({ 
+  secret: 'dev-secret-change-me', 
+  resave: false, 
+  saveUninitialized: false, 
+  cookie: { 
+    httpOnly: false, 
+    secure: false,
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  },
+  rolling: true // Reset timeout on each request
+}));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/Logo', express.static(path.join(__dirname, 'Logo')));
 
-// Serve homepage.html for root path
+// Serve login.html for root path
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'homepage.html'));
+  res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
 
-// ensure admin user exists
+// Initialize database
 db.init();
-db.ensureAdminUser();
+
+// Note: ensureAdminUser() is commented out in db.js
+// Uncomment in db.js and here to restore local admin user
+
+// KeyAuth utility functions
+async function keyAuthLogin(username, password) {
+  try {
+    console.log('Attempting KeyAuth login for user:', username);
+    
+    // First initialize session with KeyAuth (like index.txt)
+    const initData = {
+      type: 'init',
+      ownerid: KEYAUTH_CONFIG.ownerid,
+      name: KEYAUTH_CONFIG.name,
+      ver: KEYAUTH_CONFIG.version,
+      secret: KEYAUTH_CONFIG.secret
+    };
+    
+    console.log('Sending init request to KeyAuth...', initData);
+    const initQueryString = Object.keys(initData)
+      .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(initData[key])}`)
+      .join('&');
+    
+    const initUrl = `${KEYAUTH_CONFIG.url}?${initQueryString}`;
+    console.log('Init API URL:', initUrl);
+    
+    const initResponse = await axios.get(initUrl);
+    console.log('Init response:', initResponse.data);
+    
+    if (initResponse.data.success) {
+      // Now attempt login with session ID (like index.txt)
+      const loginData = {
+        type: 'login',
+        username: username,
+        pass: password,
+        sessionid: initResponse.data.sessionid,  // Using session ID as key
+        name: KEYAUTH_CONFIG.name,
+        ownerid: KEYAUTH_CONFIG.ownerid
+      };
+      
+      console.log('Sending login request to KeyAuth...', loginData);
+      const loginQueryString = Object.keys(loginData)
+        .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(loginData[key])}`)
+        .join('&');
+      
+      const loginUrl = `${KEYAUTH_CONFIG.url}?${loginQueryString}`;
+      console.log('Login API URL:', loginUrl);
+      
+      const loginResponse = await axios.get(loginUrl);
+      console.log('Login response:', loginResponse.data);
+      
+      if (loginResponse.data.success) {
+        console.log('KeyAuth login successful for:', username);
+        return { success: true, message: 'Login successful' };
+      } else {
+        console.log('KeyAuth login failed:', loginResponse.data.message);
+        return { success: false, message: loginResponse.data.message || 'Invalid credentials' };
+      }
+    } else {
+      console.log('KeyAuth init failed:', initResponse.data.message);
+      return { success: false, message: initResponse.data.message || 'Authentication service unavailable' };
+    }
+    
+  } catch (error) {
+    console.error('KeyAuth authentication error:', error.message);
+    if (error.response) {
+      console.error('Response data:', error.response.data);
+    }
+    return { success: false, message: 'Authentication service unavailable: ' + error.message };
+  }
+}
+
+async function keyAuthRegister(username, password, license) {
+  try {
+    // First initialize session with KeyAuth (like index.txt)
+    const initData = {
+      type: 'init',
+      ownerid: KEYAUTH_CONFIG.ownerid,
+      name: KEYAUTH_CONFIG.name,
+      ver: KEYAUTH_CONFIG.version,
+      secret: KEYAUTH_CONFIG.secret
+    };
+    
+    const initQueryString = Object.keys(initData)
+      .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(initData[key])}`)
+      .join('&');
+    
+    const initUrl = `${KEYAUTH_CONFIG.url}?${initQueryString}`;
+    const initResponse = await axios.get(initUrl);
+    
+    if (!initResponse.data.success) {
+      return { success: false, message: initResponse.data.message || 'Init failed' };
+    }
+    
+    // Now attempt registration with session ID (like index.txt)
+    const registerData = {
+      type: 'register',
+      username: username,
+      pass: password,
+      key: license,  // Using the license key as 'key' parameter
+      sessionid: initResponse.data.sessionid,
+      name: KEYAUTH_CONFIG.name,
+      ownerid: KEYAUTH_CONFIG.ownerid
+    };
+    
+    const registerQueryString = Object.keys(registerData)
+      .map(k => `${encodeURIComponent(k)}=${encodeURIComponent(registerData[k])}`)
+      .join('&');
+    
+    const registerUrl = `${KEYAUTH_CONFIG.url}?${registerQueryString}`;
+    const registerResponse = await axios.get(registerUrl);
+    
+    if (registerResponse.data.success) {
+      return { success: true, message: 'Registration successful' };
+    } else {
+      return { success: false, message: registerResponse.data.message || 'Registration failed' };
+    }
+    
+  } catch (error) {
+    console.error('KeyAuth registration error:', error.response?.data || error.message);
+    return { success: false, message: 'Registration service unavailable' };
+  }
+}
 
 function requireLogin(req, res, next) {
   console.log('requireLogin, session:', req.session ? req.session.userId : 'no session');
@@ -192,66 +182,72 @@ function requireLogin(req, res, next) {
 
 app.post('/login', async (req, res) => {
   const { username, password } = req.body;
+  
+  console.log('Login attempt received for user:', username);
+  console.log('Request body:', { username, password: password ? '[PROVIDED]' : '[MISSING]' });
+  
+  // Validate input
+  if (!username || !password) {
+    console.log('Login failed: missing credentials');
+    return res.status(400).json({ error: 'Username and password required' });
+  }
+  
   try {
-    const user = await db.verifyUser(username, password);
-    if (!user) return res.status(401).json({ error: 'Invalid credentials' });
+    // KEYAUTH INTEGRATION
+    // Authenticate with KeyAuth
+    console.log('Calling KeyAuth login function...');
+    const authResult = await keyAuthLogin(username, password);
+    
+    console.log('KeyAuth authentication result:', authResult);
+    
+    if (!authResult.success) {
+      console.log('KeyAuth authentication failed for user:', username);
+      return res.status(401).json({ error: authResult.message });
+    }
+    
+    console.log('KeyAuth authentication successful, creating local session...');
+    
+    // Get or create local user record
+    let user = await db.getUserByUsername(username);
+    if (!user) {
+      console.log('Creating new local user record for:', username);
+      // Create local user record for session management
+      const userId = await db.createUser(username, password);
+      user = { id: userId, username: username };
+    } else {
+      console.log('Using existing local user record for:', username);
+    }
+    
+    // Set session
     req.session.userId = user.id;
     req.session.username = user.username;
+    
+    console.log(`User ${username} logged in successfully via KeyAuth`);
     res.json({ ok: true, username: user.username });
-  } catch (err) {
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-app.post('/register', async (req, res) => {
-  const { username, password, key } = req.body;
-  if (!username || !password || !key) {
-    return res.status(400).json({ error: 'Missing fields' });
-  }
-  try {
-    const initData = {
-      type: 'init',
-      ownerid: KEYAUTH_CONFIG.ownerid,
-      name: KEYAUTH_CONFIG.name,
-      ver: KEYAUTH_CONFIG.version,
-      secret: KEYAUTH_CONFIG.secret
-    };
-    const initQueryString = Object.keys(initData)
-      .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(initData[key])}`)
-      .join('&');
-    const initUrl = `${KEYAUTH_CONFIG.url}?${initQueryString}`;
-    const initResponse = await axios.get(initUrl);
-
-    if (!initResponse.data.success) {
-      return res.status(400).json({ error: initResponse.data.message || 'Init failed' });
-    }
-
-    const registerData = {
-      type: 'register',
-      username: username,
-      pass: password,
-      key: key,
-      sessionid: initResponse.data.sessionid,
-      name: KEYAUTH_CONFIG.name,
-      ownerid: KEYAUTH_CONFIG.ownerid
-    };
-    const registerQueryString = Object.keys(registerData)
-      .map(k => `${encodeURIComponent(k)}=${encodeURIComponent(registerData[k])}`)
-      .join('&');
-    const registerUrl = `${KEYAUTH_CONFIG.url}?${registerQueryString}`;
-    const registerResponse = await axios.get(registerUrl);
-
-    if (!registerResponse.data.success) {
-      return res.status(400).json({ error: registerResponse.data.message || 'Registration failed' });
-    }
-
+    
+    /*
+    // LOCAL DATABASE AUTHENTICATION (fallback)
+    // Uncomment if KeyAuth is not working
+    
+    console.log('Using local database authentication...');
+    
     const user = await db.verifyUser(username, password);
-    if (!user) return res.json({ ok: true, registered: true });
+    if (!user) {
+      console.log('Local authentication failed for user:', username);
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+    
+    // Set session
     req.session.userId = user.id;
     req.session.username = user.username;
+    
+    console.log(`User ${username} logged in successfully via local database`);
     res.json({ ok: true, username: user.username });
+    */
+    
   } catch (err) {
-    res.status(500).json({ error: 'Server error' });
+    console.error('Login error:', err);
+    res.status(500).json({ error: 'Server error during authentication' });
   }
 });
 
@@ -272,74 +268,39 @@ app.get('/me', (req, res) => {
 app.get('/api/keys', requireLogin, async (req, res) => {
   try {
     const keys = await db.getApiKeysByUser(req.session.userId);
-    // Formatta le key nel formato richiesto dal frontend
-    const formattedKeys = keys.map(key => ({
-      key: key.token,
-      label: key.label || 'Nuova Licenza',
-      status: key.banned ? 'banned' : (new Date(key.expires_at) < new Date() ? 'expired' : 'active'),
-      uses: `${key.used_count}/${key.max_uses}`,
-      expiry: key.expires_at.split('T')[0],
-      hwid: key.hwid || 'N/A'
-    }));
-    res.json(formattedKeys);
+    res.json(keys);
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
   }
 });
 
-app.post('/api/generate-keys', requireLogin, async (req, res) => {
-  console.log('=== GENERATING KEYS REQUEST ===');
-  console.log('User ID:', req.session.userId);
-  console.log('Request body:', req.body);
-  
+app.post('/api/keys', requireLogin, async (req, res) => {
+  console.log('Creating keys for user:', req.session.userId);
   const { expiryDays, maxUses, count, customPart } = req.body;
-  
-  console.log('Parsed params:', { expiryDays, maxUses, count, customPart });
-  
-  if (!expiryDays || !maxUses || !count) {
-    console.log('Missing required fields');
-    return res.status(400).json({ error: 'Missing required fields' });
-  }
-  
-  const numKeys = parseInt(count);
+  const numKeys = count || 1;
   const keys = [];
   
-  console.log('Will generate', numKeys, 'keys');
+  // Use customPart as label, fallback to 'Nuova Licenza'
+  const label = customPart || 'Nuova Licenza';
   
-  try {
-    // Calcola la data di scadenza
-    const expiryDate = new Date();
-    expiryDate.setDate(expiryDate.getDate() + parseInt(expiryDays));
-    const formattedExpiry = expiryDate.toISOString().split('T')[0];
-    
-    console.log('Calculated expiry date:', formattedExpiry);
-    
-    for (let i = 0; i < numKeys; i++) {
-      console.log('Creating key', i + 1);
-      const token = await db.createApiKey(req.session.userId, '', parseInt(expiryDays), parseInt(maxUses), 'ContentalX-', customPart || '');
-      console.log('Created token:', token);
-      
-      if (token) {
-        keys.push({
-          key: token,
-          label: customPart || 'Nuova Licenza',
-          status: 'active',
-          uses: `0/${maxUses}`,
-          expiry: formattedExpiry,
-          hwid: 'N/A'
-        });
-        console.log('Added key to response array');
-      }
+  for (let i = 0; i < numKeys; i++) {
+    try {
+      const token = await db.createApiKey(req.session.userId, label, expiryDays || 30, maxUses || 1, 'ContentalX-', customPart || '');
+      keys.push({
+        key: token,
+        label: label,
+        status: 'active',
+        uses: `0/${maxUses || 1}`,
+        expiry: new Date(Date.now() + (expiryDays || 30) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        hwid: 'N/A'
+      });
+    } catch (err) {
+      console.error('Error creating key:', err);
+      return res.status(500).json({ error: 'Failed to create key' });
     }
-    
-    console.log(`Generated ${keys.length} keys for user ${req.session.userId}`);
-    console.log('Final keys array:', keys);
-    res.json({ keys });
-  } catch (err) {
-    console.error('Error generating keys:', err);
-    console.error('Error stack:', err.stack);
-    return res.status(500).json({ error: 'Failed to generate keys: ' + err.message });
   }
+  console.log('Created keys:', keys);
+  res.json({ keys });
 });
 
 app.post('/api/validate-key', async (req, res) => {
@@ -356,6 +317,42 @@ app.post('/api/validate-key', async (req, res) => {
     res.json({ ok: true, user: { id: info.user_id, username: info.username }, key: { id: info.id, label: info.label, created_at: info.created_at } });
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Registration endpoint
+app.post('/register', async (req, res) => {
+  const { username, password, key: license } = req.body;
+  
+  // Validate input
+  if (!username || !password || !license) {
+    return res.status(400).json({ error: 'Username, password, and license key required' });
+  }
+  
+  try {
+    // Register with KeyAuth
+    const regResult = await keyAuthRegister(username, password, license);
+    
+    if (!regResult.success) {
+      return res.status(400).json({ error: regResult.message });
+    }
+    
+    // Create local user record
+    const userId = await db.createUser(username, password);
+    
+    // Set session
+    req.session.userId = userId;
+    req.session.username = username;
+    
+    console.log(`User ${username} registered successfully via KeyAuth`);
+    res.json({ ok: true, username: username });
+    
+  } catch (err) {
+    console.error('Registration error:', err);
+    if (err.code === 'SQLITE_CONSTRAINT') {
+      return res.status(400).json({ error: 'Username already exists' });
+    }
+    res.status(500).json({ error: 'Server error during registration' });
   }
 });
 

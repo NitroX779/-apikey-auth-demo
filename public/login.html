@@ -356,7 +356,20 @@
       color: rgba(255, 255, 255, 0.3);
     }
 
-    /* Icon styles removed - icons now only appear in labels */
+    .icon {
+      position: absolute;
+      left: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: rgba(255, 255, 255, 0.4);
+      font-size: 16px;
+      transition: color 0.3s ease;
+      pointer-events: none;
+    }
+
+    .input-wrapper:focus-within .icon {
+      color: var(--primary);
+    }
 
     .password-toggle {
       position: absolute;
@@ -624,6 +637,7 @@
           <span>Username</span>
         </label>
         <div class="input-wrapper">
+          <span class="icon">👤</span>
           <input 
             type="text" 
             id="username" 
@@ -641,6 +655,7 @@
           <span>Password</span>
         </label>
         <div class="input-wrapper">
+          <span class="icon">🔒</span>
           <input 
             type="password" 
             id="password" 
@@ -668,6 +683,7 @@
           <span>Username</span>
         </label>
         <div class="input-wrapper">
+          <span class="icon">👤</span>
           <input 
             type="text" 
             id="regUsername" 
@@ -685,6 +701,7 @@
           <span>Password</span>
         </label>
         <div class="input-wrapper">
+          <span class="icon">🔒</span>
           <input 
             type="password" 
             id="regPassword" 
@@ -705,6 +722,7 @@
           <span>License Key</span>
         </label>
         <div class="input-wrapper">
+          <span class="icon">🔑</span>
           <input 
             type="text" 
             id="regKey" 
@@ -886,6 +904,7 @@
       try {
         const res = await fetch('/login', { 
           method: 'POST', 
+          credentials: 'include',
           headers: { 'Content-Type': 'application/json' }, 
           body: JSON.stringify(body) 
         });
@@ -917,6 +936,7 @@
       try {
         const res = await fetch('/register', {
           method: 'POST',
+          credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body)
         });
