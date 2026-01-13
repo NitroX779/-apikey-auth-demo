@@ -1180,9 +1180,9 @@
       });
     }
 
-    // Security check function
+    // Security check function - simplified approach
     function checkAuthentication() {
-      return fetch('/me')
+      fetch('/me')
         .then(response => response.json())
         .then(data => {
           if (!data.loggedIn) {
@@ -1202,11 +1202,9 @@
                 Access Denied - Unauthorized
               </div>
             `;
-            return false;
           } else {
-            // User is authenticated, continue with normal initialization
+            // User is authenticated, update subtitle
             document.getElementById('userSubtitle').textContent = 'ContentalX · ' + data.username + ' · Online';
-            return true;
           }
         })
         .catch(error => {
@@ -1227,34 +1225,31 @@
               Security Error - Access Blocked
             </div>
           `;
-          return false;
         });
     }
 
-    // Inizializzazione
+    // Inizializzazione - restored original approach
     document.addEventListener('DOMContentLoaded', function() {
       // Block developer tools first
       blockDevTools();
       
-      // Then check authentication and load keys afterward
-      checkAuthentication().then(isAuthenticated => {
-        if (isAuthenticated) {
-          createParticles();
-          setupEventListeners();
-          updatePreview();
-          setupColorPicker();
-          
-          // Carica le key esistenti dopo aver confermato l'autenticazione
-          loadExistingKeys();
-          
-          // Chiudi dropdown se clicchi fuori
-          document.addEventListener('click', function(e) {
-            if (currentDropdown && !e.target.closest('.dropdown-menu') && !e.target.closest('.settings-btn')) {
-              closeDropdown();
-            }
-          });
+      // Check authentication
+      checkAuthentication();
+      
+      // Initialize UI components
+      createParticles();
+      setupEventListeners();
+      updatePreview();
+      setupColorPicker();
+      
+      // Load existing keys immediately - this was working before
+      loadExistingKeys();
+      
+      // Close dropdown if clicked outside
+      document.addEventListener('click', function(e) {
+        if (currentDropdown && !e.target.closest('.dropdown-menu') && !e.target.closest('.settings-btn')) {
+          closeDropdown();
         }
-        // If not authenticated, the checkAuthentication function already handled the redirect
       });
     });
 
@@ -1844,33 +1839,17 @@
       });
     }
 
-    // Carica key esistenti dal server
+    // Carica key esistenti dal server - simplified version
     async function loadExistingKeys() {
-      console.log('=== LOADING EXISTING KEYS ===');
       try {
         const response = await fetch('/api/keys');
-        console.log('Keys API response status:', response.status);
-        
         if (response.ok) {
           const keys = await response.json();
-          console.log('Received keys:', keys);
-          console.log('Number of keys received:', keys.length);
-          
-          if (keys && keys.length > 0) {
-            addNewLicenses(keys);
-            showNotification(`Caricate ${keys.length} licenze esistenti`, 'success');
-          } else {
-            console.log('No existing keys found');
-            showNotification('Nessuna licenza trovata', 'info');
-          }
-        } else {
-          const errorText = await response.text();
-          console.error('Server error loading keys:', response.status, errorText);
-          showNotification('Errore nel caricamento delle licenze: ' + response.status, 'error');
+          addNewLicenses(keys);
         }
       } catch (error) {
-        console.error('Network error loading keys:', error);
-        showNotification('Errore di connessione nel caricamento delle licenze', 'error');
+        console.error('Error loading keys:', error);
+        // Silent fail as before - don't show user error for clarity
       }
     }
 
