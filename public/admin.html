@@ -1319,6 +1319,9 @@
         const count = parseInt(document.getElementById('count').value);
         const customPart = document.getElementById('customPart').value.trim();
         
+        console.log('=== GENERATING KEYS CLIENT SIDE ===');
+        console.log('Form values:', { expiryDays, maxUses, count, customPart });
+        
         if (!expiryDays || !maxUses || !count) {
           showNotification('Por favor completa todos los campos', 'error');
           return;
@@ -1333,38 +1336,58 @@
         
         try {
           // Chiamata reale al server per generare le key
+          const requestBody = {
+            expiryDays: expiryDays,
+            maxUses: maxUses,
+            count: count,
+            customPart: customPart
+          };
+          
+          console.log('Sending request:', requestBody);
+          
           const response = await fetch('/api/generate-keys', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
             },
-            body: JSON.stringify({
-              expiryDays: expiryDays,
-              maxUses: maxUses,
-              count: count,
-              customPart: customPart
-            })
+            body: JSON.stringify(requestBody)
           });
+          
+          console.log('Response status:', response.status);
+          console.log('Response ok:', response.ok);
           
           if (response.ok) {
             const result = await response.json();
-            showNotification(`${result.keys.length} licencias generadas exitosamente`, 'success');
-            addNewLicenses(result.keys);
+            console.log('Server response:', result);
             
-            // Reset form
-            document.getElementById('expiryDays').value = 30;
-            document.getElementById('maxUses').value = 1;
-            document.getElementById('count').value = 1;
-            document.getElementById('customPart').value = '';
-            updatePreview();
-            calculateCost();
+            if (result.keys && result.keys.length > 0) {
+              showNotification(`${result.keys.length} licencias generadas exitosamente`, 'success');
+              addNewLicenses(result.keys);
+              
+              // Reset form
+              document.getElementById('expiryDays').value = 30;
+              document.getElementById('maxUses').value = 1;
+              document.getElementById('count').value = 1;
+              document.getElementById('customPart').value = '';
+              updatePreview();
+              calculateCost();
+            } else {
+              showNotification('El servidor respondió pero no devolvió keys válidas', 'warning');
+              console.warn('Empty or invalid keys array received:', result);
+            }
           } else {
-            const error = await response.json();
-            showNotification('Error al generar licencias: ' + error.message, 'error');
+            const errorText = await response.text();
+            console.error('Server error response:', errorText);
+            try {
+              const error = JSON.parse(errorText);
+              showNotification('Error al generar licencias: ' + error.error, 'error');
+            } catch {
+              showNotification('Error del servidor: ' + errorText, 'error');
+            }
           }
         } catch (error) {
           console.error('Generation error:', error);
-          showNotification('Error de conexión al servidor', 'error');
+          showNotification('Error de conexión al servidor: ' + error.message, 'error');
         }
       });
       

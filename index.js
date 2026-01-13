@@ -288,22 +288,34 @@ app.get('/api/keys', requireLogin, async (req, res) => {
 });
 
 app.post('/api/generate-keys', requireLogin, async (req, res) => {
-  console.log('Generating keys for user:', req.session.userId);
+  console.log('=== GENERATING KEYS REQUEST ===');
+  console.log('User ID:', req.session.userId);
+  console.log('Request body:', req.body);
+  
   const { expiryDays, maxUses, count, customPart } = req.body;
   
+  console.log('Parsed params:', { expiryDays, maxUses, count, customPart });
+  
   if (!expiryDays || !maxUses || !count) {
+    console.log('Missing required fields');
     return res.status(400).json({ error: 'Missing required fields' });
   }
   
-  const numKeys = count;
+  const numKeys = parseInt(count);
   const keys = [];
+  
+  console.log('Will generate', numKeys, 'keys');
   
   try {
     for (let i = 0; i < numKeys; i++) {
-      const token = await db.createApiKey(req.session.userId, '', expiryDays, maxUses, 'ContentalX-', customPart || '');
+      console.log('Creating key', i + 1);
+      const token = await db.createApiKey(req.session.userId, '', parseInt(expiryDays), parseInt(maxUses), 'ContentalX-', customPart || '');
+      console.log('Created token:', token);
       
       // Recupera i dettagli completi della key creata
       const keyDetails = await db.getApiKeyDetails(token);
+      console.log('Key details:', keyDetails);
+      
       if (keyDetails) {
         keys.push({
           key: token,
@@ -313,14 +325,17 @@ app.post('/api/generate-keys', requireLogin, async (req, res) => {
           expiry: keyDetails.expires_at.split('T')[0],
           hwid: 'N/A'
         });
+        console.log('Added key to response array');
       }
     }
     
     console.log(`Generated ${keys.length} keys for user ${req.session.userId}`);
+    console.log('Final keys array:', keys);
     res.json({ keys });
   } catch (err) {
     console.error('Error generating keys:', err);
-    return res.status(500).json({ error: 'Failed to generate keys' });
+    console.error('Error stack:', err.stack);
+    return res.status(500).json({ error: 'Failed to generate keys: ' + err.message });
   }
 });
 
