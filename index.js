@@ -307,22 +307,25 @@ app.post('/api/generate-keys', requireLogin, async (req, res) => {
   console.log('Will generate', numKeys, 'keys');
   
   try {
+    // Calcola la data di scadenza
+    const expiryDate = new Date();
+    expiryDate.setDate(expiryDate.getDate() + parseInt(expiryDays));
+    const formattedExpiry = expiryDate.toISOString().split('T')[0];
+    
+    console.log('Calculated expiry date:', formattedExpiry);
+    
     for (let i = 0; i < numKeys; i++) {
       console.log('Creating key', i + 1);
       const token = await db.createApiKey(req.session.userId, '', parseInt(expiryDays), parseInt(maxUses), 'ContentalX-', customPart || '');
       console.log('Created token:', token);
       
-      // Recupera i dettagli completi della key creata
-      const keyDetails = await db.getApiKeyDetails(token);
-      console.log('Key details:', keyDetails);
-      
-      if (keyDetails) {
+      if (token) {
         keys.push({
           key: token,
           label: customPart || 'Nuova Licenza',
           status: 'active',
           uses: `0/${maxUses}`,
-          expiry: keyDetails.expires_at.split('T')[0],
+          expiry: formattedExpiry,
           hwid: 'N/A'
         });
         console.log('Added key to response array');
