@@ -175,9 +175,9 @@ app.use(session({ secret: 'dev-secret-change-me', resave: false, saveUninitializ
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/Logo', express.static(path.join(__dirname, 'Logo')));
 
-// Serve login.html for root path
+// Serve homepage.html for root path
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'login.html'));
+  res.sendFile(path.join(__dirname, 'public', 'homepage.html'));
 });
 
 // ensure admin user exists
