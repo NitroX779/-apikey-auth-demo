@@ -164,6 +164,15 @@ function resetApiKey(id, userId) {
   });
 }
 
+function getApiKeyDetails(key) {
+  return new Promise((resolve, reject) => {
+    db.get('SELECT * FROM api_keys WHERE token = ?', [key], (err, row) => {
+      if (err) reject(err);
+      else resolve(row);
+    });
+  });
+}
+
 init();
 
 module.exports = {
@@ -177,5 +186,6 @@ module.exports = {
   validateApiKey,
   deleteApiKey,
   banApiKey,
-  resetApiKey
+  resetApiKey,
+  getApiKeyDetails
 };

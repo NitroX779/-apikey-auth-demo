@@ -272,28 +272,56 @@ app.get('/me', (req, res) => {
 app.get('/api/keys', requireLogin, async (req, res) => {
   try {
     const keys = await db.getApiKeysByUser(req.session.userId);
-    res.json(keys);
+    // Formatta le key nel formato richiesto dal frontend
+    const formattedKeys = keys.map(key => ({
+      key: key.token,
+      label: key.label || 'Nuova Licenza',
+      status: key.banned ? 'banned' : (new Date(key.expires_at) < new Date() ? 'expired' : 'active'),
+      uses: `${key.used_count}/${key.max_uses}`,
+      expiry: key.expires_at.split('T')[0],
+      hwid: key.hwid || 'N/A'
+    }));
+    res.json(formattedKeys);
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
   }
 });
 
-app.post('/api/keys', requireLogin, async (req, res) => {
-  console.log('Creating keys for user:', req.session.userId);
+app.post('/api/generate-keys', requireLogin, async (req, res) => {
+  console.log('Generating keys for user:', req.session.userId);
   const { expiryDays, maxUses, count, customPart } = req.body;
-  const numKeys = count || 1;
-  const keys = [];
-  for (let i = 0; i < numKeys; i++) {
-    try {
-      const token = await db.createApiKey(req.session.userId, '', expiryDays || 30, maxUses || 1, 'ContentalX-', customPart || '');
-      keys.push(token);
-    } catch (err) {
-      console.error('Error creating key:', err);
-      return res.status(500).json({ error: 'Failed to create key' });
-    }
+  
+  if (!expiryDays || !maxUses || !count) {
+    return res.status(400).json({ error: 'Missing required fields' });
   }
-  console.log('Created keys:', keys);
-  res.json({ keys });
+  
+  const numKeys = count;
+  const keys = [];
+  
+  try {
+    for (let i = 0; i < numKeys; i++) {
+      const token = await db.createApiKey(req.session.userId, '', expiryDays, maxUses, 'ContentalX-', customPart || '');
+      
+      // Recupera i dettagli completi della key creata
+      const keyDetails = await db.getApiKeyDetails(token);
+      if (keyDetails) {
+        keys.push({
+          key: token,
+          label: customPart || 'Nuova Licenza',
+          status: 'active',
+          uses: `0/${maxUses}`,
+          expiry: keyDetails.expires_at.split('T')[0],
+          hwid: 'N/A'
+        });
+      }
+    }
+    
+    console.log(`Generated ${keys.length} keys for user ${req.session.userId}`);
+    res.json({ keys });
+  } catch (err) {
+    console.error('Error generating keys:', err);
+    return res.status(500).json({ error: 'Failed to generate keys' });
+  }
 });
 
 app.post('/api/validate-key', async (req, res) => {
